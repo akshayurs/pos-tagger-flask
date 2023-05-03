@@ -1,4 +1,5 @@
 from firebase_admin import auth
+from gpt4free import forefront
 from flask_cors import CORS
 import spacy
 import random
@@ -6,6 +7,7 @@ from flask import Flask, jsonify, request
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from gpt4free import forefront
 cred = credentials.Certificate('./serviceAccountKey.json')
 app = firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -151,6 +153,24 @@ def reset():
             u'sentence': i
         })
     return jsonify({"status": "success", "message": "Data added successfully"})
+
+# Chatbot route
+@app.route('/chatbot', methods=['POST'])
+def chatbot():
+    token = forefront.Account.create(logging=False)
+    # print(token)
+
+    # get a response
+    output = str("")
+    for response in forefront.StreamingCompletion.create(
+	    token=token,
+	    prompt = str(request.form.get('prompt')),
+	    model='gpt-4'
+    ):
+        output += response.choices[0].text
+        # print(response.choices[0].text, end='')
+    
+    return jsonify( {'response' : output} )
 
 
 @app.route('/', methods=['GET'])
